@@ -1,0 +1,198 @@
+1. Structure
+src/
+├── main/
+│   ├── java/
+│   │   └── com/
+│   │       └── example/
+│   │           ├── entity/
+│   │           │   └── Student.java
+│   │           ├── dao/
+│   │           │   └── StudentDAO.java
+│   │           └── MainApp.java
+│   └── resources/
+│       ├── hibernate.cfg.xml
+│       └── log4j.properties
+
+ 2.Configuration Files
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-configuration PUBLIC
+        "-//Hibernate/Hibernate Configuration DTD 3.0//EN"
+        "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
+<hibernate-configuration>
+    <session-factory>
+        <!-- Database connection settings -->
+        <property name="connection.driver_class">com.mysql.cj.jdbc.Driver</property>
+        <property name="connection.url">jdbc:mysql://localhost:3306/studentdb</property>
+        <property name="connection.username">root</property>
+        <property name="connection.password">password</property>
+
+        <!-- JDBC connection pool settings -->
+        <property name="connection.pool_size">5</property>
+
+        <!-- SQL dialect -->
+        <property name="dialect">org.hibernate.dialect.MySQL8Dialect</property>
+
+        <!-- Echo all executed SQL to stdout -->
+        <property name="show_sql">true</property>
+
+        <!-- Drop and re-create the database schema on startup -->
+        <property name="hbm2ddl.auto">update</property>
+
+        <!-- Names the annotated entity class -->
+        <mapping class="com.example.entity.Student"/>
+    </session-factory>
+</hibernate-configuration>
+
+  3. Entity Class
+package com.example.entity;
+
+import javax.persistence.*;
+
+@Entity
+@Table(name = "students")
+public class Student {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private int id;
+
+    @Column(name = "name", nullable = false)
+    private String name;
+
+    @Column(name = "age")
+    private int age;
+
+    // Constructors
+    public Student() {
+    }
+
+    public Student(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+
+    // Getters and Setters
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    @Override
+    public String toString() {
+        return "Student [id=" + id + ", name=" + name + ", age=" + age + "]";
+    }
+}
+4. DAO Class
+  package com.example.dao;
+
+import com.example.entity.Student;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.cfg.Configuration;
+
+import java.util.List;
+
+public class StudentDAO {
+
+    private SessionFactory factory;
+
+    public StudentDAO() {
+        // Create session factory
+        factory = new Configuration()
+                .configure("hibernate.cfg.xml")
+                .addAnnotatedClass(Student.class)
+                .buildSessionFactory();
+    }
+
+    // Create a new student
+    public void createStudent(Student student) {
+        Session session = factory.getCurrentSession();
+        try {
+            session.beginTransaction();
+            session.save(student);
+            session.getTransaction().commit();
+            System.out.println("Student created: " + student);
+        } finally {
+            session.close();
+        }
+    }
+
+    // Read a student by ID
+    public Student getStudent(int id) {
+        Session session = factory.getCurrentSession();
+        try {
+            session.beginTransaction();
+            Student student = session.get(Student.class, id);
+            session.getTransaction().commit();
+            return student;
+        } finally {
+            session.close();
+        }
+    }
+
+    // Read all students
+    public List<Student> getAllStudents() {
+        Session session = factory.getCurrentSession();
+        try {
+            session.beginTransaction();
+            List<Student> students = session.createQuery("from Student", Student.class).getResultList();
+            session.getTransaction().commit();
+            return students;
+        } finally {
+            session.close();
+        }
+    }
+
+    // Update a student
+    public void updateStudent(Student student) {
+        Session session = factory.getCurrentSession();
+        try {
+            session.beginTransaction();
+            session.update(student);
+            session.getTransaction().commit();
+            System.out.println("Student updated: " + student);
+        } finally {
+            session.close();
+        }
+    }
+
+    // Delete a student by ID
+    public void deleteStudent(int id) {
+        Session session = factory.getCurrentSession();
+        try {
+            session.beginTransaction();
+            Student student = session.get(Student.class, id);
+            if (student != null) {
+                session.delete(student);
+                System.out.println("Student deleted with ID: " + id);
+            }
+            session.getTransaction().commit();
+        } finally {
+            session.close();
+        }
+    }
+
+    public void close() {
+        factory.close();
+    }
+}
